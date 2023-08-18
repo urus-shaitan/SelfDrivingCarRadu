@@ -11,14 +11,17 @@ class Car {
     this.maxSpeed = 3;
     this.friction = 0.03;
     this.angle = 0;
+
+    this.sensor = new Sensor(this);
     this.controls = new Controls();
   }
 
   draw(ctx) {
+    this.sensor.draw(ctx);
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(-this.angle);
-    
+
     ctx.beginPath();
     ctx.rect(
       -this.width / 2,
@@ -30,9 +33,9 @@ class Car {
     ctx.restore();
   }
 
-  update() {
+  update(roadBorders) {
     this.#move();
-    console.log(this.speed)
+    this.sensor.update(roadBorders);
   }
 
   #move() {
@@ -50,32 +53,32 @@ class Car {
       this.speed -= this.acceleration;
     }
   }
-  
+
   #applySpeedLimits() {
     if (this.speed > this.maxSpeed) {
       this.speed = this.maxSpeed
     }
-    
-    if (this.speed < -this.maxSpeed/2) {
+
+    if (this.speed < -this.maxSpeed / 2) {
       this.speed = -this.maxSpeed / 2
     }
   }
-  
+
   #applyFriction() {
-    if(this.speed > 0) {
-      this.speed -=this.friction;
+    if (this.speed > 0) {
+      this.speed -= this.friction;
     }
 
-    if(this.speed < 0) {
-      this.speed +=this.friction;
+    if (this.speed < 0) {
+      this.speed += this.friction;
     }
   }
 
-  #rotate()  {
-     if(Math.abs(this.speed) < this.friction) {
+  #rotate() {
+    if (Math.abs(this.speed) < this.friction) {
       this.speed = 0;
     }
-    if(this.speed != 0) {
+    if (this.speed != 0) {
       const flip = this.speed > 0 ? 1 : -1;
       if (this.controls.left) {
         this.angle += 0.02 * flip;
