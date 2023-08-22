@@ -1,6 +1,6 @@
 class Car {
 
-  constructor(x, y, width, height) {
+  constructor(x, y, width, height, type, maxSpeed = 2) {
     this.x = x;
     this.y = y;
     this.width = width;
@@ -8,43 +8,49 @@ class Car {
 
     this.speed = 0;
     this.acceleration = 0.2;
-    this.maxSpeed = 3;
+    this.maxSpeed = maxSpeed;
     this.friction = 0.03;
     this.angle = 0;
     this.damaged = false;
-    
-    this.sensor = new Sensor(this);
-    this.controls = new Controls();
+
+    if (type != "DUMMY") {
+      this.sensor = new Sensor(this);
+    }
+    this.controls = new Controls(type);
   }
 
-  draw(ctx) {
-    this.sensor.draw(ctx);
-    if(this.damaged) {
+  draw(ctx, color) {
+    if (this.sensor) {
+      this.sensor.draw(ctx);
+    }
+    if (this.damaged) {
       ctx.fillStyle = "grey";
     } else {
-       ctx.fillStyle = "black";
+      ctx.fillStyle = color;
     }
-   /* ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(-this.angle);*/
+    /* ctx.save();
+     ctx.translate(this.x, this.y);
+     ctx.rotate(-this.angle);*/
 
     ctx.beginPath();
     ctx.moveTo(this.polygon[0].x, this.polygon[0].y);
-    for(let i=1; i<this.polygon.length; i++){
-       ctx.lineTo(this.polygon[i].x, this.polygon[i].y);
+    for (let i = 1; i < this.polygon.length; i++) {
+      ctx.lineTo(this.polygon[i].x, this.polygon[i].y);
     }
     ctx.fill();
-    ctx.restore();
+    //ctx.restore();
   }
 
-  update(roadBorders) {
-    if(!this.damaged){
+  update(roadBorders, traffic) {
+    if (!this.damaged) {
       this.#move();
       this.polygon = this.#createPolygon();
-      this.damaged = this.#assesDamage(roadBorders);
+      this.damaged = this.#assesDamage(roadBorders, traffic);
     }
-   
-    this.sensor.update(roadBorders);
+
+    if (this.sensor) {
+      this.sensor.update(roadBorders, traffic);
+    }
   }
 
   #move() {
@@ -53,6 +59,7 @@ class Car {
     this.#applyFriction();
     this.#rotate();
   }
+
   #applyAcceleration() {
     if (this.controls.forward) {
       this.speed += this.acceleration;
@@ -102,10 +109,10 @@ class Car {
     this.y -= Math.cos(this.angle) * this.speed;
   }
 
-  #createPolygon(){
+  #createPolygon() {
     const points = [];
 
-    const diag = Math.hypot(this.width/2, this.height/2);
+    const diag = Math.hypot(this.width / 2, this.height / 2);
     const alpha = Math.atan2(this.width, this.height);
 
     points.push(
@@ -114,7 +121,7 @@ class Car {
         y: this.y - Math.cos(this.angle - alpha * 1.2) * diag
       }
     );
-        points.push(
+    points.push(
       {
         x: this.x - Math.sin(this.angle - alpha) * diag,
         y: this.y - Math.cos(this.angle - alpha) * diag
@@ -127,7 +134,7 @@ class Car {
         y: this.y - Math.cos(this.angle + alpha) * diag
       }
     );
-        points.push(
+    points.push(
       {
         x: this.x - Math.sin(this.angle + alpha * 1.2) * diag,
         y: this.y - Math.cos(this.angle + alpha * 1.2) * diag
@@ -136,25 +143,30 @@ class Car {
 
     points.push(
       {
-        x: this.x - Math.sin(Math.PI + this.angle - alpha) * diag*1.1,
+        x: this.x - Math.sin(Math.PI + this.angle - alpha) * diag * 1.1,
         y: this.y - Math.cos(Math.PI + this.angle - alpha) * diag
       }
     );
     points.push(
       {
-        x: this.x - Math.sin(Math.PI + this.angle + alpha) * diag*1.1,
+        x: this.x - Math.sin(Math.PI + this.angle + alpha) * diag * 1.1,
         y: this.y - Math.cos(Math.PI + this.angle + alpha) * diag
       }
     );
     return points;
   }
 
-  #assesDamage(roadBorders){
-      for(let i=0; i<roadBorders.length; i++) {
-        if(polysIntersect(this.polygon, roadBorders[i])){
-          return true;
-        }
+  #assesDamage(roadBorders, traffic) {
+    for (let i = 0; i < roadBorders.length; i++) {
+      if (polysIntersect(this.polygon, roadBorders[i])) {
+        return true;
       }
+    }
+    for (let i = 0; i < traffic.length; i++) {
+      if (polysIntersect(this.polygon, traffic[i].polygon)) {
+        return true;
+      }
+    }
     return false;
   }
 }
