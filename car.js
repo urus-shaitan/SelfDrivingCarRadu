@@ -11,30 +11,39 @@ class Car {
     this.maxSpeed = 3;
     this.friction = 0.03;
     this.angle = 0;
-
+    this.damaged = false;
+    
     this.sensor = new Sensor(this);
     this.controls = new Controls();
   }
 
   draw(ctx) {
     this.sensor.draw(ctx);
-    ctx.save();
+    if(this.damaged) {
+      ctx.fillStyle = "grey";
+    } else {
+       ctx.fillStyle = "black";
+    }
+   /* ctx.save();
     ctx.translate(this.x, this.y);
-    ctx.rotate(-this.angle);
+    ctx.rotate(-this.angle);*/
 
     ctx.beginPath();
-    ctx.rect(
-      -this.width / 2,
-      -this.height / 2,
-      this.width,
-      this.height
-    );
+    ctx.moveTo(this.polygon[0].x, this.polygon[0].y);
+    for(let i=1; i<this.polygon.length; i++){
+       ctx.lineTo(this.polygon[i].x, this.polygon[i].y);
+    }
     ctx.fill();
     ctx.restore();
   }
 
   update(roadBorders) {
-    this.#move();
+    if(!this.damaged){
+      this.#move();
+      this.polygon = this.#createPolygon();
+      this.damaged = this.#assesDamage(roadBorders);
+    }
+   
     this.sensor.update(roadBorders);
   }
 
@@ -91,5 +100,61 @@ class Car {
 
     this.x -= Math.sin(this.angle) * this.speed;
     this.y -= Math.cos(this.angle) * this.speed;
+  }
+
+  #createPolygon(){
+    const points = [];
+
+    const diag = Math.hypot(this.width/2, this.height/2);
+    const alpha = Math.atan2(this.width, this.height);
+
+    points.push(
+      {
+        x: this.x - Math.sin(this.angle - alpha * 1.2) * diag,
+        y: this.y - Math.cos(this.angle - alpha * 1.2) * diag
+      }
+    );
+        points.push(
+      {
+        x: this.x - Math.sin(this.angle - alpha) * diag,
+        y: this.y - Math.cos(this.angle - alpha) * diag
+      }
+    );
+
+    points.push(
+      {
+        x: this.x - Math.sin(this.angle + alpha) * diag,
+        y: this.y - Math.cos(this.angle + alpha) * diag
+      }
+    );
+        points.push(
+      {
+        x: this.x - Math.sin(this.angle + alpha * 1.2) * diag,
+        y: this.y - Math.cos(this.angle + alpha * 1.2) * diag
+      }
+    );
+
+    points.push(
+      {
+        x: this.x - Math.sin(Math.PI + this.angle - alpha) * diag*1.1,
+        y: this.y - Math.cos(Math.PI + this.angle - alpha) * diag
+      }
+    );
+    points.push(
+      {
+        x: this.x - Math.sin(Math.PI + this.angle + alpha) * diag*1.1,
+        y: this.y - Math.cos(Math.PI + this.angle + alpha) * diag
+      }
+    );
+    return points;
+  }
+
+  #assesDamage(roadBorders){
+      for(let i=0; i<roadBorders.length; i++) {
+        if(polysIntersect(this.polygon, roadBorders[i])){
+          return true;
+        }
+      }
+    return false;
   }
 }
