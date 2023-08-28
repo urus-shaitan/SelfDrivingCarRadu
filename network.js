@@ -30,7 +30,6 @@ class Level {
     this.biases = new Array(outputCount);
 
     this.weights = [];
-    console.log(this.inputs);
     for(let i=0; i<inputCount; i++) {
        this.weights[i] = new Array(outputCount);
     }
