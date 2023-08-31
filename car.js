@@ -24,8 +24,8 @@ class Car {
     this.controls = new Controls(type);
   }
 
-  draw(ctx, color) {
-    if (this.sensor) {
+  draw(ctx, color, drawSensors=true) {
+    if (this.sensor && drawSensors) {
       this.sensor.draw(ctx);
     }
     if (this.damaged) {

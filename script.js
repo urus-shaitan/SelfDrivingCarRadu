@@ -1,7 +1,7 @@
 const carCanvas = document.getElementById("carCanvas");
 carCanvas.height = window.innerHeight;
 carCanvas.width = 200;
-
+const lblCarNumber = document.getElementById("lblCarNumber");
 const networkCanvas = document.getElementById("networkCanvas");
 networkCanvas.height = window.innerHeight;
 networkCanvas.width = 300;
@@ -10,13 +10,28 @@ const carCtx = carCanvas.getContext("2d");
 const networkCtx = networkCanvas.getContext("2d");
 
 const road = new Road(100, 190);
-const N = 500;
-const cars = generateCars(N);
+const N = 2000;
+let cars = generateCars(N);
 let bestCar = cars[0];
+
+if (localStorage.getItem("bestBrain")) {
+  cars.forEach(car => {
+    car.brain = JSON.parse(localStorage.getItem("bestBrain"));
+    NeuralNetwork.mutate(car.brain, 0.2);
+  });
+  bestCar.brain = JSON.parse(localStorage.getItem("bestBrain"));
+}
 
 const traffic = [
   new Car(road.getLaneCenter(1), 100, 30, 50, "DUMMY", 2.2),
-  new Car(road.getLaneCenter(0), 280, 30, 50, "DUMMY", 2.2)
+  new Car(road.getLaneCenter(0), 280, 30, 50, "DUMMY", 2.2),
+  new Car(road.getLaneCenter(0), -100, 30, 50, "DUMMY", 2.2),
+  new Car(road.getLaneCenter(2), -100, 30, 50, "DUMMY", 2.2),
+  new Car(road.getLaneCenter(1), -400, 30, 50, "DUMMY", 2.2),
+  new Car(road.getLaneCenter(1), -800, 30, 50, "DUMMY", 2.2),
+  new Car(road.getLaneCenter(2), -750, 30, 50, "DUMMY", 2.2),
+  new Car(road.getLaneCenter(0), -1000, 30, 50, "DUMMY", 2.2),
+  new Car(road.getLaneCenter(1), -1050, 30, 50, "DUMMY", 2.2)
 ]
 
 animate();
@@ -40,7 +55,11 @@ function discard() {
 function animate(time) {
   traffic.forEach(t => t.update(road.borders, []));
 
-  cars.forEach(car => car.update(road.borders, traffic));
+  cars.forEach(car => {
+    if(!car.damaged && !car.lost) {
+      car.update(road.borders, traffic)
+    }
+  });
 
   carCanvas.height = window.innerHeight;
   networkCanvas.height = window.innerHeight;
@@ -54,13 +73,21 @@ function animate(time) {
   road.draw(carCtx);
 
   carCtx.globalAlpha = 0.2;
-  cars.forEach(car => car.draw(carCtx, "blue"));
+  cars.forEach(car => 
+    {
+      car.lost = Math.abs(Math.abs(car.y) - Math.abs(bestCar.y)) > 280;
+      if(!car.damaged && !car.lost) {
+        car.draw(carCtx, "blue", false);
+      }
+    });
   carCtx.globalAlpha = 1;
   bestCar.draw(carCtx, "blue");
 
   traffic.forEach(t => t.draw(carCtx, "red"));
   carCtx.restore();
-  
+  cars = cars.filter(car => !car.damaged && !car.lost);
+  lblCarNumber.innerHTML = cars.length;
+
   networkCtx.lineDashOffset =- time/100;
 
   Visualizer.drawNetwork(networkCtx, bestCar.brain);
